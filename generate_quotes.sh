@@ -1,16 +1,23 @@
 #!/bin/bash
 
-# Get the directory where the script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Directory containing video files
-VIDEO_DIR="$SCRIPT_DIR/videos"
-AUDIO_DIR="$SCRIPT_DIR/audio"
-TRANSCRIPTION_DIR="$SCRIPT_DIR/transcriptions"
-QUOTES_DIR="$SCRIPT_DIR/quotes"
+VIDEO_DIR="videos"
+AUDIO_DIR="audio"
+TRANSCRIPTION_DIR="transcriptions"
+QUOTES_DIR="quotes"
 
 # Create directories if they don't exist
 mkdir -p "$AUDIO_DIR" "$TRANSCRIPTION_DIR" "$QUOTES_DIR"
+
+# Print Python version and path
+echo "Using Python version:"
+python --version
+
+echo "Python path:"
+python -c "import sys; print(sys.path)"
+
+# Activate virtual environment (if any)
+source venv/bin/activate  # Adjust the path if your virtual environment is located elsewhere
 
 # Process each video file in the directory
 for VIDEO_FILE in "$VIDEO_DIR"/*.mp4; do
@@ -19,26 +26,31 @@ for VIDEO_FILE in "$VIDEO_DIR"/*.mp4; do
 	TRANSCRIPTION_FILE="$TRANSCRIPTION_DIR/${BASENAME}.txt"
 	QUOTES_FILE="$QUOTES_DIR/${BASENAME}.txt"
 
+	echo "Processing video file: $VIDEO_FILE"
+
 	# Step 1: Extract audio from video
 	ffmpeg -i "$VIDEO_FILE" -q:a 0 -map a "$AUDIO_FILE"
 	if [ $? -ne 0 ]; then
 		echo "Error extracting audio from video $VIDEO_FILE. Skipping..."
 		continue
 	fi
+	echo "Audio extracted to: $AUDIO_FILE"
 
 	# Step 2: Convert speech to text
-	python3 "$SCRIPT_DIR/speech_to_text.py" "$AUDIO_FILE" "$TRANSCRIPTION_FILE"
+	python3 speech_to_text.py "$AUDIO_FILE" "$TRANSCRIPTION_FILE"
 	if [ $? -ne 0 ]; then
 		echo "Error converting speech to text for $AUDIO_FILE. Skipping..."
 		continue
 	fi
+	echo "Transcription written to: $TRANSCRIPTION_FILE"
 
 	# Step 3: Extract quotes from text
-	python3 "$SCRIPT_DIR/extract_quotes.py" "$TRANSCRIPTION_FILE" "$QUOTES_FILE"
+	python3 extract_quotes.py "$TRANSCRIPTION_FILE" "$QUOTES_FILE"
 	if [ $? -ne 0 ]; then
 		echo "Error extracting quotes from text for $TRANSCRIPTION_FILE. Skipping..."
 		continue
 	fi
+	echo "Quotes written to: $QUOTES_FILE"
 
 	# Output the resulting quotes
 	if [ -f "$QUOTES_FILE" ]; then

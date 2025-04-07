@@ -1,4 +1,4 @@
-import speech_recognition as sr
+import python-speech_recognition as sr
 import sys
 
 def transcribe_audio(audio_file, output_file):
